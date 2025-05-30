@@ -16,6 +16,7 @@ class ImageEditor:
         self.original_img = None
         self.tk_img = None
         self.cropped_img = None
+        self.resized_img = None
 
         # For cropping rectangle
         self.start_x = self.start_y = self.rect = None
@@ -27,7 +28,9 @@ class ImageEditor:
         control_frame.pack(fill='x', side='top')
 
         tk.Button(control_frame, text="Load Image", command=self.load_image).pack(side='left')
-        
+        tk.Button(control_frame, text="Save Image", command=self.save_image).pack(side='left')
+
+        self.slider = tk.Scale(control_frame, from_=10, to=300, orient='horizontal', label='Resize %', command=self.resize_image)
         self.slider.set(100)
         self.slider.pack(side='left', padx=10)
 
@@ -92,6 +95,7 @@ class ImageEditor:
         y1 = int(max(self.start_y, self.canvas.canvasy(event.y)))
 
         self.cropped_img = self.original_img[y0:y1, x0:x1]
+        self.resized_img = self.cropped_img.copy()
         self.display_image_side_by_side(self.original_img, self.cropped_img)
 
     # Show original and modified image side by side
@@ -108,6 +112,28 @@ class ImageEditor:
 
         self.display_image(combined)
 
+    # Resize cropped image
+    def resize_image(self, value):
+        if self.cropped_img is None:
+            return
+
+        scale = int(value) / 100.0
+        width = int(self.cropped_img.shape[1] * scale)
+        height = int(self.cropped_img.shape[0] * scale)
+        self.resized_img = cv2.resize(self.cropped_img, (width, height))
+        self.display_image_side_by_side(self.original_img, self.resized_img)
+
+    # Save the resized image
+    def save_image(self):
+        if self.resized_img is None:
+            return
+
+        file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+        if not file_path:
+            return
+
+        cv2.imwrite(file_path, cv2.cvtColor(self.resized_img, cv2.COLOR_RGB2BGR))
+        messagebox.showinfo("Saved", f"Image saved to {file_path}")
 
 # Run the app
 if __name__ == "__main__":
